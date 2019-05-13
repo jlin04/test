@@ -12,13 +12,7 @@ ua = UserAgent()
 headers1 = {'User-Agent':'ua.ramdom'}
 import re
 import pandas as pd
-import pymongo
-
-Mongo_Url = 'localhost'
-Mongo_DB = 'Lianjia'
-Mongo_TABLE = 'Lianjia zs'
-client = pymongo.MongoClient(Mongo_Url)
-db = client[Mongo_DB]
+import os
 
 def generate_allurl(user_in_nub,user_in_city):      #生成url
     #print("--generate_allurl: city:", user_in_nub, " num:",user_in_nub)
@@ -59,21 +53,9 @@ def open_url(re_get):           #分析详细url获取所需信息
             if '</span>' in i or len(i) > 0 :
                 key,value = (i.split('</span>'))
                 info[key[24:]] = value.rsplit('</li>')[0]
-        '''
-        for i in soup.select('.transaction li'):
-            i = str(i)
-            if '</span>' in i and len(i) > 0 and '抵押信息' not in i:
-                key, value = (i.split('</span>'))
-                info[key[24:]] = value.rsplit('</li>')[0]
-        '''
-        #print(info)
+
         return info
 
-def update_to_MongoDB(one_page):       #update储存到MongoDB
-    if db[Mongo_TABLE].update_one({'链家编号':one_page['链家编号']},{'$set':one_page},True):
-        print('储存MongoDB 成功!')
-        return True
-    return False
 
 
 def pandas_to_xlsx(info, line):               #储存到xlsx
@@ -84,21 +66,22 @@ def pandas_to_xlsx(info, line):               #储存到xlsx
     print(pd_look)
     pd_look.to_excel('链家二手房.xlsx',sheet_name='链家二手房',startrow=line)
 
-def pandas_to_csv(filename,info, isheader):               #储存到csv
+def pandas_to_csv(filename,info):               #储存到csv
     print("info",info)
     if info is None:
         return
+    isheader = not os.path.exists(filename)
     pd_look = pd.DataFrame.from_records([info])
-    if filename == '链家二手房.csv':
+    if filename.find('detail.csv') not -1:
         columns = ['标题', '总价', '每平方售价', '参考总价', '建造时间', '小区名称', '所在区域', '链家编号', '房屋户型',
                '所在楼层', '建筑面积', '户型结构', '套内面积', '建筑类型', '房屋朝向', '建筑结构', '装修情况', '梯户比例',
                '配备电梯', '产权年限']
         pd_look.to_csv(filename,mode='a',encoding='utf_8_sig',header=isheader,index=False,columns=columns)
-    elif filename == 'summary.csv':
+    elif filename.find('summary.csv') not -1:
         pd_look.to_csv(filename,mode='a',encoding='utf_8_sig',header=isheader,index=False)
 
 def writer_to_text(list):               #储存到text
-    with open('链家二手房.txt','a',encoding='utf-8')as f:
+    with open('detail.txt','a',encoding='utf-8')as f:
         f.write(json.dumps(list,ensure_ascii=False)+'\n')
         f.close()
 
@@ -148,30 +131,9 @@ if __name__ == '__main__':
             print("End:", indexC)
             totalpage = text[indexT+11:indexC-2]
             print("totalPage:", totalpage)
-    pandas_to_csv('summary.csv',info, True)
+    pandas_to_csv('summary.csv',info)
 
-    isheader = True;
-    for eachurl in re_get:
-        open_list = open_url(eachurl)
-        #if len(open_list) > 2:
-        #pandas_to_xlsx(open_list, line)
-        pandas_to_csv('链家二手房.csv',open_list, isheader)
-        isheader = False
-        #writer_to_text(open_list)
-        #line=line+1
-       
-'''
-    get_url = requests.get(generate_allurl,'lxml',headers = headers1)
-    #print("get_url result",get_url.status_code)
-    if get_url.status_code == 200:
-        print(get_url)
-        re_set = re.compile('<li.*?class="clear LOGCLICKDATA">.*?<a.*?class="img.*?".*?href="(.*?)"')
-        re_get = re.findall(re_set,get_url.text)
-        print("re_get",re_get)
-
-
-    pool = Pool()
-    for i in generate_allurl('2','zs'):
-        print(i)
-        pool.map(main,[url for url in get_allurl(i)])
-'''
+    if True:
+        for eachurl in re_get:
+            open_list = open_url(eachurl)
+            pandas_to_csv('detail.csv',open_list)
