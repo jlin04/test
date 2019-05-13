@@ -10,7 +10,7 @@ import re
 import pandas as pd
 import os
 import time
-from selenium import webdriver
+#from selenium import webdriver
 
 def generate_allurl(user_in_nub,user_in_city):      #生成url
     #print("--generate_allurl: city:", user_in_nub, " num:",user_in_nub)
@@ -148,7 +148,7 @@ if __name__ == '__main__':
             print("totalPage:", totalpage)
     pandas_to_csv(datestr+'_summary.csv',info)
 
-    if True:
+    if False:
         for eachurl in re_get:
             open_list = open_url(eachurl)
             pandas_to_csv(datestr+'_detail.csv',open_list)
